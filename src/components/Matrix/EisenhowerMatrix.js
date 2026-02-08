@@ -17,7 +17,7 @@ import Header from '../UI/Header';
 import FeedbackModal from '../UI/FeedbackModal';
 import InfoModal from '../UI/InfoModal';
 import ApiSettingsModal from '../UI/ApiSettingsModal';
-import ApiDocsPage from '../UI/ApiDocsPage';
+
 import UserSettingsModal from '../UI/UserSettingsModal';
 import Archive from './Archive';
 import Trash from './Trash';
@@ -47,7 +47,7 @@ export default function EisenhowerMatrix() {
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isApiOpen, setIsApiOpen] = useState(false);
   const [isUserSettingsOpen, setIsUserSettingsOpen] = useState(false);
-  const [showApiDocs, setShowApiDocs] = useState(false);
+
   const [globalFilter, setGlobalFilter] = useState(null); // null, 'active', or 'completed'
   const { currentUser } = useAuth();
 
@@ -492,7 +492,7 @@ export default function EisenhowerMatrix() {
         isOpen={isApiOpen}
         onClose={() => setIsApiOpen(false)}
         userId={currentUser?.uid}
-        onOpenDocs={() => setShowApiDocs(true)}
+        onOpenDocs={() => window.open('/docs', '_blank')}
       />
 
       <UserSettingsModal
@@ -500,11 +500,7 @@ export default function EisenhowerMatrix() {
         onClose={() => setIsUserSettingsOpen(false)}
       />
 
-      {showApiDocs && (
-        <div className="fixed inset-0 z-[60] bg-white dark:bg-[#1a1a1a] overflow-y-auto">
-          <ApiDocsPage onBack={() => setShowApiDocs(false)} />
-        </div>
-      )}
+
     </div>
   );
 }
