@@ -122,10 +122,12 @@ export default function useMatrixDnd({ initialItems, onReorderComplete } = {}) {
     if (onReorderComplete) {
       setTimeout(() => {
         setItems(currentItems => {
-          onReorderComplete(currentItems);
+          Promise.resolve(onReorderComplete(currentItems))
+            .finally(() => {
+              isDragging.current = false;
+            });
           return currentItems; 
         });
-        isDragging.current = false;
       }, 0);
     } else {
       isDragging.current = false;
