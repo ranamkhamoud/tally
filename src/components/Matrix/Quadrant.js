@@ -35,7 +35,8 @@ export default function Quadrant({
   onDeleteTask,
   onArchiveTask,
   globalFilter,
-  onClearGlobalFilter
+  onClearGlobalFilter,
+  readOnly = false
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: id
@@ -58,7 +59,7 @@ export default function Quadrant({
 
   const activeTasks = tasks.filter(t => !t.done);
   const completedTasks = tasks.filter(t => t.done);
-  const displayedTasks = activeTab === 'active' ? activeTasks : completedTasks;
+  const displayedTasks = readOnly ? tasks : (activeTab === 'active' ? activeTasks : completedTasks);
 
   const checkScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -94,30 +95,32 @@ export default function Quadrant({
       className={`group flex flex-col h-full min-h-0 overflow-hidden p-1.5 sm:p-2 md:p-3 ${isOver ? 'bg-slate-900/[0.04] dark:bg-white/[0.04]' : ''}`}
     >
       {/* Tabs */}
-      <div className="flex items-center gap-1 mb-1.5 px-0.5">
-        <button
-          onClick={() => handleTabClick('active')}
-          className={`
-            px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded transition-colors
-            ${activeTab === 'active' 
-              ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' 
-              : 'text-slate-500 hover:text-slate-700 dark:text-white/50 dark:hover:text-white/70'}
-          `}
-        >
-          Active {activeTasks.length > 0 && `(${activeTasks.length})`}
-        </button>
-        <button
-          onClick={() => handleTabClick('completed')}
-          className={`
-            px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded transition-colors
-            ${activeTab === 'completed' 
-              ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' 
-              : 'text-slate-500 hover:text-slate-700 dark:text-white/50 dark:hover:text-white/70'}
-          `}
-        >
-          Done {completedTasks.length > 0 && `(${completedTasks.length})`}
-        </button>
-      </div>
+      {!readOnly && (
+        <div className="flex items-center gap-1 mb-1.5 px-0.5">
+          <button
+            onClick={() => handleTabClick('active')}
+            className={`
+              px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded transition-colors
+              ${activeTab === 'active' 
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' 
+                : 'text-slate-500 hover:text-slate-700 dark:text-white/50 dark:hover:text-white/70'}
+            `}
+          >
+            Active {activeTasks.length > 0 && `(${activeTasks.length})`}
+          </button>
+          <button
+            onClick={() => handleTabClick('completed')}
+            className={`
+              px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded transition-colors
+              ${activeTab === 'completed' 
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' 
+                : 'text-slate-500 hover:text-slate-700 dark:text-white/50 dark:hover:text-white/70'}
+            `}
+          >
+            Done {completedTasks.length > 0 && `(${completedTasks.length})`}
+          </button>
+        </div>
+      )}
 
       {/* Task list with scroll indicator */}
       <div className="relative flex-1 min-h-0">
@@ -152,6 +155,7 @@ export default function Quadrant({
                       onEdit={onEditTask}
                       onDelete={onDeleteTask}
                       onArchive={onArchiveTask}
+                      readOnly={readOnly}
                     />
                   </div>
                 ))}

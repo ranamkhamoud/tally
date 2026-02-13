@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getUserId } from "./users";
 
-// Get all active tasks for the current user
+// Get all active tasks for the current user (sorted by sortOrder)
 export const getActiveTasks = query({
   args: {},
   handler: async (ctx) => {
@@ -16,7 +16,10 @@ export const getActiveTasks = query({
       )
       .collect();
 
-    return tasks;
+    // Sort by sortOrder (ascending), falling back to _creationTime for legacy tasks
+    return tasks.sort(
+      (a, b) => (a.sortOrder ?? a._creationTime) - (b.sortOrder ?? b._creationTime)
+    );
   },
 });
 
@@ -87,6 +90,7 @@ export const createTask = mutation({
       urgent: args.urgent,
       done: false,
       status: "active",
+      sortOrder: Date.now(),
     });
 
     return taskId;
@@ -104,6 +108,7 @@ export const updateTask = mutation({
     important: v.optional(v.boolean()),
     urgent: v.optional(v.boolean()),
     done: v.optional(v.boolean()),
+    sortOrder: v.optional(v.float64()),
   },
   handler: async (ctx, args) => {
     const userId = await getUserId(ctx);
@@ -122,8 +127,38 @@ export const updateTask = mutation({
     if (args.important !== undefined) updates.important = args.important;
     if (args.urgent !== undefined) updates.urgent = args.urgent;
     if (args.done !== undefined) updates.done = args.done;
+    if (args.sortOrder !== undefined) updates.sortOrder = args.sortOrder;
 
     await ctx.db.patch(args.taskId, updates);
+  },
+});
+
+// Batch-reorder tasks (update sortOrder, and optionally important/urgent for cross-quadrant moves)
+export const reorderTasks = mutation({
+  args: {
+    updates: v.array(
+      v.object({
+        taskId: v.id("tasks"),
+        sortOrder: v.float64(),
+        important: v.optional(v.boolean()),
+        urgent: v.optional(v.boolean()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    for (const update of args.updates) {
+      const task = await ctx.db.get(update.taskId);
+      if (!task || task.userId !== userId) continue;
+
+      const patch: Record<string, any> = { sortOrder: update.sortOrder };
+      if (update.important !== undefined) patch.important = update.important;
+      if (update.urgent !== undefined) patch.urgent = update.urgent;
+
+      await ctx.db.patch(update.taskId, patch);
+    }
   },
 });
 

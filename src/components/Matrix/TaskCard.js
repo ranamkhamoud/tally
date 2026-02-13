@@ -3,7 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Calendar, Pencil, Trash2, Archive } from 'lucide-react';
 
-export default function TaskCard({ task, onToggleDone, onEdit, onDelete, onArchive }) {
+export default function TaskCard({ task, onToggleDone, onEdit, onDelete, onArchive, readOnly = false }) {
   const {
     attributes,
     listeners,
@@ -60,13 +60,15 @@ export default function TaskCard({ task, onToggleDone, onEdit, onDelete, onArchi
     >
       {/* Title row */}
       <div className="flex items-start gap-2.5">
-        <input
-          type="checkbox"
-          checked={task.done}
-          onChange={() => onToggleDone(task.id)}
-          onClick={(e) => e.stopPropagation()}
-          className="w-4 h-4 mt-0.5 accent-slate-900 dark:accent-white border-slate-300 dark:border-white/30 rounded cursor-pointer flex-shrink-0"
-        />
+        {!readOnly && (
+          <input
+            type="checkbox"
+            checked={task.done}
+            onChange={() => onToggleDone(task.id)}
+            onClick={(e) => e.stopPropagation()}
+            className="w-4 h-4 mt-0.5 accent-slate-900 dark:accent-white border-slate-300 dark:border-white/30 rounded cursor-pointer flex-shrink-0"
+          />
+        )}
         <div className="flex-1 min-w-0">
           <p
             className={`
@@ -85,7 +87,7 @@ export default function TaskCard({ task, onToggleDone, onEdit, onDelete, onArchi
       </div>
 
       {/* Meta + actions */}
-      <div className="mt-2 pl-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+      <div className={`mt-2 ${readOnly ? 'pl-0' : 'pl-6'} flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2`}>
         <div className="flex items-center gap-2 flex-wrap min-w-0">
           {task.priority && (
             <span className={`text-[10px] font-bold uppercase tracking-wide ${priority.color}`}>
@@ -108,29 +110,31 @@ export default function TaskCard({ task, onToggleDone, onEdit, onDelete, onArchi
         </div>
 
         {/* Actions - visible on hover (desktop) or always (mobile) */}
-        <div className="flex flex-nowrap justify-end sm:ml-auto gap-0.5 opacity-100 sm:opacity-0 sm:group-hover/card:opacity-100 transition-opacity">
-          <button 
-            onClick={(e) => { e.stopPropagation(); onEdit(task); }}
-            className="p-1.5 sm:p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/40 dark:text-white/40 dark:hover:text-white dark:hover:bg-white/10 rounded transition-all hover:scale-110 active:scale-95"
-            title="Edit"
-          >
-            <Pencil className="w-3.5 h-3.5 sm:w-3.5 sm:h-3.5" />
-          </button>
-          <button 
-            onClick={(e) => { e.stopPropagation(); onArchive(task.id); }}
-            className="p-1.5 sm:p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/40 dark:text-white/40 dark:hover:text-white dark:hover:bg-white/10 rounded transition-all hover:scale-110 active:scale-95"
-            title="Archive"
-          >
-            <Archive className="w-3.5 h-3.5 sm:w-3.5 sm:h-3.5" />
-          </button>
-          <button 
-            onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
-            className="p-1.5 sm:p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-500/10 dark:text-white/40 dark:hover:text-red-400 dark:hover:bg-red-500/10 rounded transition-all hover:scale-110 active:scale-95"
-            title="Delete"
-          >
-            <Trash2 className="w-3.5 h-3.5 sm:w-3.5 sm:h-3.5" />
-          </button>
-        </div>
+        {!readOnly && (
+          <div className="flex flex-nowrap justify-end sm:ml-auto gap-0.5 opacity-100 sm:opacity-0 sm:group-hover/card:opacity-100 transition-opacity">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onEdit(task); }}
+              className="p-1.5 sm:p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/40 dark:text-white/40 dark:hover:text-white dark:hover:bg-white/10 rounded transition-all hover:scale-110 active:scale-95"
+              title="Edit"
+            >
+              <Pencil className="w-3.5 h-3.5 sm:w-3.5 sm:h-3.5" />
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); onArchive(task.id); }}
+              className="p-1.5 sm:p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/40 dark:text-white/40 dark:hover:text-white dark:hover:bg-white/10 rounded transition-all hover:scale-110 active:scale-95"
+              title="Archive"
+            >
+              <Archive className="w-3.5 h-3.5 sm:w-3.5 sm:h-3.5" />
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
+              className="p-1.5 sm:p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-500/10 dark:text-white/40 dark:hover:text-red-400 dark:hover:bg-red-500/10 rounded transition-all hover:scale-110 active:scale-95"
+              title="Delete"
+            >
+              <Trash2 className="w-3.5 h-3.5 sm:w-3.5 sm:h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

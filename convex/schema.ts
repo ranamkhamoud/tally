@@ -21,6 +21,7 @@ const schema = defineSchema({
     urgent: v.boolean(),
     done: v.boolean(),
     status: v.string(), // 'active', 'archived', 'deleted'
+    sortOrder: v.optional(v.float64()), // manual ordering within quadrant
     archivedAt: v.optional(v.number()),
     deletedAt: v.optional(v.number()),
   })

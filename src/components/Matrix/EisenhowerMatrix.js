@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  DndContext, 
-  DragOverlay,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors
-} from '@dnd-kit/core';
+import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -21,24 +14,10 @@ import ApiSettingsModal from '../UI/ApiSettingsModal';
 import UserSettingsModal from '../UI/UserSettingsModal';
 import Archive from './Archive';
 import Trash from './Trash';
+import useMatrixDnd, { QUADRANT_IDS, QUADRANT_MAPPING } from './useMatrixDnd';
 import { Plus, Archive as ArchiveIcon, Trash2, ArrowLeft } from 'lucide-react';
 
-const quadrantMapping = {
-  'do-first': { important: true, urgent: true },
-  'schedule': { important: true, urgent: false },
-  'delegate': { important: false, urgent: true },
-  'eliminate': { important: false, urgent: false }
-};
-
-function getQuadrantId(task) {
-  if (task.important && task.urgent) return 'do-first';
-  if (task.important && !task.urgent) return 'schedule';
-  if (!task.important && task.urgent) return 'delegate';
-  return 'eliminate';
-}
-
 export default function EisenhowerMatrix() {
-  const [activeTask, setActiveTask] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [defaultQuadrant, setDefaultQuadrant] = useState(null);
@@ -64,17 +43,52 @@ export default function EisenhowerMatrix() {
   const restoreTask = useMutation(api.tasks.restoreTask);
   const permanentlyDeleteTask = useMutation(api.tasks.permanentlyDelete);
   const emptyTrashMutation = useMutation(api.tasks.emptyTrash);
+  const reorderTasksMutation = useMutation(api.tasks.reorderTasks);
   const submitFeedback = useMutation(api.feedback.submitFeedback);
 
   const loading = tasks === undefined;
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
-    })
-  );
+  // Shared drag-and-drop logic — persists order to Convex on drop
+  const {
+    items: orderedItems,
+    setItems: setOrderedItems,
+    activeTask,
+    isDragging,
+    sensors,
+    collisionDetection,
+    handleDragStart,
+    handleDragOver,
+    handleDragEnd,
+  } = useMatrixDnd({
+    onReorderComplete: async (finalItems) => {
+      const updates = [];
+      for (const qId of QUADRANT_IDS) {
+        const { important, urgent } = QUADRANT_MAPPING[qId];
+        finalItems[qId].forEach((task, index) => {
+          updates.push({ taskId: task._id, sortOrder: index, important, urgent });
+        });
+      }
+      if (updates.length > 0) {
+        try {
+          await reorderTasksMutation({ updates });
+        } catch (error) {
+          console.error('Error persisting task order:', error);
+        }
+      }
+    },
+  });
+
+  // Sync ordered items from Convex whenever tasks change (skipped mid-drag)
+  useEffect(() => {
+    if (isDragging.current) return;
+    const normalized = tasks.map(t => ({ ...t, id: t._id }));
+    setOrderedItems({
+      'do-first': normalized.filter(t => t.important && t.urgent),
+      'schedule': normalized.filter(t => t.important && !t.urgent),
+      'delegate': normalized.filter(t => !t.important && t.urgent),
+      'eliminate': normalized.filter(t => !t.important && !t.urgent),
+    });
+  }, [tasks, isDragging, setOrderedItems]);
 
   const dropAnimation = null;
 
@@ -240,43 +254,9 @@ export default function EisenhowerMatrix() {
     }
   };
 
-  const handleDragStart = (event) => {
-    const { active } = event;
-    const task = tasks.find(t => t._id === active.id);
-    setActiveTask(task);
-  };
-
-  const handleDragEnd = async (event) => {
-    const { active, over } = event;
-    setActiveTask(null);
-
-    if (!over) return;
-
-    const taskId = active.id;
-    const targetQuadrant = over.id;
-
-    if (quadrantMapping[targetQuadrant]) {
-      const task = tasks.find(t => t._id === taskId);
-      const currentQuadrant = getQuadrantId(task);
-
-      if (currentQuadrant !== targetQuadrant) {
-        const { important, urgent } = quadrantMapping[targetQuadrant];
-        await handleUpdateTask(taskId, { important, urgent });
-      }
-    }
-  };
-
-  // Convert tasks to use _id as id for compatibility
-  const normalizedTasks = tasks.map(t => ({ ...t, id: t._id }));
+  // Convert archived/deleted tasks for other views
   const normalizedArchivedTasks = archivedTasks.map(t => ({ ...t, id: t._id }));
   const normalizedDeletedTasks = deletedTasks.map(t => ({ ...t, id: t._id }));
-
-  const tasksByQuadrant = {
-    'do-first': normalizedTasks.filter(t => t.important && t.urgent),
-    'schedule': normalizedTasks.filter(t => t.important && !t.urgent),
-    'delegate': normalizedTasks.filter(t => !t.important && t.urgent),
-    'eliminate': normalizedTasks.filter(t => !t.important && !t.urgent)
-  };
 
   if (loading) {
     return (
@@ -333,8 +313,9 @@ export default function EisenhowerMatrix() {
             <div className="flex-1 min-h-0 mx-auto w-full px-4 sm:px-6 pt-16 sm:pt-14 pb-16 sm:pb-20 flex flex-col">
               <DndContext
                 sensors={sensors}
-                collisionDetection={closestCenter}
+                collisionDetection={collisionDetection}
                 onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
               >
                 {/* Matrix canvas - fixed size, quadrants scroll internally */}
@@ -373,7 +354,7 @@ export default function EisenhowerMatrix() {
                       <div className="grid grid-cols-2 grid-rows-2 h-full min-h-0">
                         <Quadrant
                           id="do-first"
-                          tasks={tasksByQuadrant['do-first']}
+                          tasks={orderedItems['do-first']}
                           onToggleDone={handleToggleDone}
                           onEditTask={handleEditTask}
                           onDeleteTask={(id) => handleDeleteTask(id)}
@@ -383,7 +364,7 @@ export default function EisenhowerMatrix() {
                         />
                         <Quadrant
                           id="schedule"
-                          tasks={tasksByQuadrant['schedule']}
+                          tasks={orderedItems['schedule']}
                           onToggleDone={handleToggleDone}
                           onEditTask={handleEditTask}
                           onDeleteTask={(id) => handleDeleteTask(id)}
@@ -393,7 +374,7 @@ export default function EisenhowerMatrix() {
                         />
                         <Quadrant
                           id="delegate"
-                          tasks={tasksByQuadrant['delegate']}
+                          tasks={orderedItems['delegate']}
                           onToggleDone={handleToggleDone}
                           onEditTask={handleEditTask}
                           onDeleteTask={(id) => handleDeleteTask(id)}
@@ -403,7 +384,7 @@ export default function EisenhowerMatrix() {
                         />
                         <Quadrant
                           id="eliminate"
-                          tasks={tasksByQuadrant['eliminate']}
+                          tasks={orderedItems['eliminate']}
                           onToggleDone={handleToggleDone}
                           onEditTask={handleEditTask}
                           onDeleteTask={(id) => handleDeleteTask(id)}
@@ -420,7 +401,7 @@ export default function EisenhowerMatrix() {
                   {activeTask ? (
                     <div className="shadow-xl rounded-lg">
                       <TaskCard
-                        task={{ ...activeTask, id: activeTask._id }}
+                        task={activeTask}
                         onToggleDone={() => {}}
                         onEdit={() => {}}
                         onArchive={() => {}}
