@@ -11,25 +11,29 @@ import './styles/index.css';
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <ThemeProvider>
-          <Routes>
-            <Route 
-              path="/" 
-              element={
-                <PrivateRoute>
-                  <EisenhowerMatrix />
-                </PrivateRoute>
-              } 
-            />
-            <Route path="/login/*" element={<Login />} />
-            <Route path="/signup/*" element={<Signup />} />
-            <Route path="/to-dos" element={<TodosMatrix />} />
-            <Route path="/docs" element={<ApiDocsPage onBack={() => window.location.href = '/'} />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </ThemeProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <Routes>
+          <Route path="/login/*" element={<Login />} />
+          <Route path="/signup/*" element={<Signup />} />
+          <Route path="/*" element={
+            <AuthProvider>
+              <Routes>
+                <Route 
+                  path="/" 
+                  element={
+                    <PrivateRoute>
+                      <EisenhowerMatrix />
+                    </PrivateRoute>
+                  } 
+                />
+                <Route path="/to-dos" element={<TodosMatrix />} />
+                <Route path="/docs" element={<ApiDocsPage onBack={() => window.location.href = '/'} />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </AuthProvider>
+          } />
+        </Routes>
+      </ThemeProvider>
     </Router>
   );
 }
