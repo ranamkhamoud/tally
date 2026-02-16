@@ -1,11 +1,11 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useUser } from "@clerk/clerk-react";
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function PrivateRoute({ children }) {
-  const { isLoaded, isSignedIn } = useUser();
+  const { isAuthenticated, loading } = useAuth();
 
-  if (!isLoaded) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="w-10 h-10 border-3 border-slate-200 border-t-slate-900 rounded-full animate-spin"></div>
@@ -13,5 +13,5 @@ export default function PrivateRoute({ children }) {
     );
   }
 
-  return isSignedIn ? children : <Navigate to="/login" />;
+  return isAuthenticated ? children : <Navigate to="/login" />;
 }
