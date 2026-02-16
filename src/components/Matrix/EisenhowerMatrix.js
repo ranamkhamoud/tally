@@ -15,7 +15,7 @@ import UserSettingsModal from '../UI/UserSettingsModal';
 import Archive from './Archive';
 import Trash from './Trash';
 import useMatrixDnd, { QUADRANT_IDS, QUADRANT_MAPPING } from './useMatrixDnd';
-import { Plus, Archive as ArchiveIcon, Trash2, ArrowLeft } from 'lucide-react';
+import { Plus, Archive as ArchiveIcon, Trash2 } from 'lucide-react';
 
 export default function EisenhowerMatrix() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -78,7 +78,7 @@ export default function EisenhowerMatrix() {
     },
   });
 
-  // Sync ordered items from Convex whenever tasks change (skipped mid-drag)
+  // Sync ordered items from Convex whenever tasks change
   useEffect(() => {
     if (isDragging.current) return;
     const normalized = tasks.map(t => ({ ...t, id: t._id }));
@@ -273,19 +273,10 @@ export default function EisenhowerMatrix() {
         onOpenInfo={() => setIsInfoOpen(true)}
         onOpenApi={() => setIsApiOpen(true)}
         onOpenUserSettings={() => setIsUserSettingsOpen(true)}
+        activeTab={activeTab}
+        onBack={() => setActiveTab('matrix')}
       />
 
-      {activeTab !== 'matrix' && (
-        <button
-          onClick={() => setActiveTab('matrix')}
-          className="fixed top-6 left-6 z-50 text-slate-900/90 hover:text-slate-900 dark:text-white/90 dark:hover:text-white transition-all hover:scale-110 active:scale-95"
-          aria-label="Back to matrix"
-          title="Back"
-        >
-          <ArrowLeft className="w-6 h-6 sm:w-7 sm:h-7" />
-        </button>
-      )}
-      
       <div className="flex-1 min-h-0">
         {activeTab === 'archive' && (
           <div className="h-full overflow-y-auto">
@@ -412,8 +403,8 @@ export default function EisenhowerMatrix() {
                 </DragOverlay>
               </DndContext>
 
-              {/* Bottom-left navigation icons (Archive / Trash) - temporarily disabled */}
-              {/* <div className="fixed bottom-6 left-6 z-50 flex items-center gap-4 sm:gap-6">
+              {/* Bottom-left navigation icons (Archive / Trash) */}
+              <div className="fixed bottom-6 left-6 z-50 flex items-center gap-4 sm:gap-6">
                 <button
                   onClick={() => setActiveTab((t) => (t === 'archive' ? 'matrix' : 'archive'))}
                   className="text-slate-900/90 hover:text-slate-900 dark:text-white/90 dark:hover:text-white transition-all hover:scale-110 active:scale-95"
@@ -430,7 +421,7 @@ export default function EisenhowerMatrix() {
                 >
                   <Trash2 className="w-6 h-6 sm:w-7 sm:h-7" />
                 </button>
-              </div> */}
+              </div>
 
               <button
                 onClick={handleOpenAddModal}

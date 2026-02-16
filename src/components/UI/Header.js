@@ -1,10 +1,10 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Sun, Moon, MessageSquare, Command, Key, User } from 'lucide-react';
+import { LogOut, Sun, Moon, MessageSquare, Command, Key, User, ArrowLeft } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
-export default function Header({ onOpenFeedback, onOpenInfo, onOpenApi, onOpenUserSettings }) {
+export default function Header({ onOpenFeedback, onOpenInfo, onOpenApi, onOpenUserSettings, activeTab, onBack }) {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
@@ -21,8 +21,17 @@ export default function Header({ onOpenFeedback, onOpenInfo, onOpenApi, onOpenUs
   return (
     <header className="fixed top-0 left-0 right-0 z-50 p-6 pointer-events-none">
       <div className="flex items-start justify-between">
-        {/* API key - left side */}
-        {currentUser && typeof onOpenApi === 'function' ? (
+        {/* Left side: back arrow when in trash/archive, API key otherwise */}
+        {activeTab && activeTab !== 'matrix' ? (
+          <button
+            onClick={onBack}
+            className="pointer-events-auto text-slate-900/90 hover:text-slate-900 dark:text-white/90 dark:hover:text-white transition-all hover:scale-110 active:scale-95"
+            aria-label="Back to matrix"
+            title="Back"
+          >
+            <ArrowLeft className="w-6 h-6 sm:w-7 sm:h-7" />
+          </button>
+        ) : currentUser && typeof onOpenApi === 'function' ? (
           <button
             onClick={onOpenApi}
             className="pointer-events-auto text-slate-900/90 hover:text-slate-900 dark:text-white/90 dark:hover:text-white transition-all hover:scale-110 active:scale-95"
