@@ -14,6 +14,8 @@ const INITIAL_TASKS = [
   { id: 'todo-3', title: 'Add confirmation dialog before emptying trash', description: '', priority: 'low', important: false, urgent: true, done: false },
 
   { id: 'todo-4', title: 'Empty trash tasks older than 30 days', description: 'Server-side scheduled job to permanently delete expired trash items', priority: 'low', important: false, urgent: false, done: false },
+
+  { id: 'todo-5', title: 'Add calendar integration', description: 'Allow users to add tasks to their calendar (Google, Apple, Outlook)', priority: 'low', important: false, urgent: true, done: false },
 ];
 
 const noop = () => {};
